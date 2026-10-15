@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+                  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+                  id="Definitions_AS_IS"
+                  targetNamespace="http://bpmn.io/schema/bpmn"
+                  exporter="Camunda Modeler"
+                  exporterVersion="5.20.0">
+  <bpmn:collaboration id="Collaboration_AS_IS">
+    <bpmn:participant id="Participant_Bank" name="Процесс предоставления доступа AS-IS (Текущее состояние)" processRef="Process_AS_IS" />
+  </bpmn:collaboration>
+
+  <bpmn:process id="Process_AS_IS" isExecutable="false">
+    <bpmn:laneSet id="LaneSet_1">
+      <bpmn:lane id="Lane_Employee" name="Сотрудник">
+        <bpmn:flowNodeRef>StartEvent_ASIS</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_DraftEmail</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_Success_ASIS</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Manager" name="Руководитель">
+        <bpmn:flowNodeRef>Task_ReviewEmail</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_ManagerDecision</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_Rejected_ASIS</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Helpdesk" name="Service Desk / Администратор ИС">
+        <bpmn:flowNodeRef>Task_CreateTicket</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ManualAdminGrant</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_NotifyUserManual</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="StartEvent_ASIS" name="Возникла потребность в доступе">
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <bpmn:task id="Task_DraftEmail" name="Написание письма руководителю в свободной форме">
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+    </bpmn:task>
+
+    <bpmn:task id="Task_ReviewEmail" name="Ручное рассмотрение письма руководителем">
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+      <bpmn:outgoing>Flow_3</bpmn:outgoing>
+    </bpmn:task>
+
+    <bpmn:exclusiveGateway id="Gateway_ManagerDecision" name="Решение руководителя">
+      <bpmn:incoming>Flow_3</bpmn:incoming>
+      <bpmn:outgoing>Flow_ManagerApprove</bpmn:outgoing>
+      <bpmn:outgoing>Flow_ManagerReject</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <bpmn:endEvent id="EndEvent_Rejected_ASIS" name="Отказ в доступе (ответ письмом)">
+      <bpmn:incoming>Flow_ManagerReject</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:task id="Task_CreateTicket" name="Создание тикета в Service Desk с копией письма">
+      <bpmn:incoming>Flow_ManagerApprove</bpmn:incoming>
+      <bpmn:outgoing>Flow_4</bpmn:outgoing>
+    </bpmn:task>
+
+    <bpmn:task id="Task_ManualAdminGrant" name="Ручное заведение пользователя и назначение прав в консоли">
+      <bpmn:incoming>Flow_4</bpmn:incoming>
+      <bpmn:outgoing>Flow_5</bpmn:outgoing>
+    </bpmn:task>
+
+    <bpmn:task id="Task_NotifyUserManual" name="Закрытие тикета и отправка уведомления">
+      <bpmn:incoming>Flow_5</bpmn:incoming>
+      <bpmn:outgoing>Flow_6</bpmn:outgoing>
+    </bpmn:task>
+
+    <bpmn:endEvent id="EndEvent_Success_ASIS" name="Доступ предоставлен вручную (3-7 дней)">
+      <bpmn:incoming>Flow_6</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent_ASIS" targetRef="Task_DraftEmail" />
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="Task_DraftEmail" targetRef="Task_ReviewEmail" />
+    <bpmn:sequenceFlow id="Flow_3" sourceRef="Task_ReviewEmail" targetRef="Gateway_ManagerDecision" />
+    <bpmn:sequenceFlow id="Flow_ManagerApprove" name="Одобрено" sourceRef="Gateway_ManagerDecision" targetRef="Task_CreateTicket" />
+    <bpmn:sequenceFlow id="Flow_ManagerReject" name="Отклонено" sourceRef="Gateway_ManagerDecision" targetRef="EndEvent_Rejected_ASIS" />
+    <bpmn:sequenceFlow id="Flow_4" sourceRef="Task_CreateTicket" targetRef="Task_ManualAdminGrant" />
+    <bpmn:sequenceFlow id="Flow_5" sourceRef="Task_ManualAdminGrant" targetRef="Task_NotifyUserManual" />
+    <bpmn:sequenceFlow id="Flow_6" sourceRef="Task_NotifyUserManual" targetRef="EndEvent_Success_ASIS" />
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="BPMNDiagram_AS_IS">
+    <bpmndi:BPMNPlane id="BPMNPlane_AS_IS" bpmnElement="Collaboration_AS_IS">
+      <bpmndi:BPMNShape id="Participant_Bank_di" bpmnElement="Participant_Bank" isHorizontal="true">
+        <dc:Bounds x="160" y="80" width="1050" height="420" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_Employee_di" bpmnElement="Lane_Employee" isHorizontal="true">
+        <dc:Bounds x="190" y="80" width="1020" height="130" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_Manager_di" bpmnElement="Lane_Manager" isHorizontal="true">
+        <dc:Bounds x="190" y="210" width="1020" height="140" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_Helpdesk_di" bpmnElement="Lane_Helpdesk" isHorizontal="true">
+        <dc:Bounds x="190" y="350" width="1020" height="150" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_ASIS_di" bpmnElement="StartEvent_ASIS">
+        <dc:Bounds x="242" y="122" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_DraftEmail_di" bpmnElement="Task_DraftEmail">
+        <dc:Bounds x="330" y="100" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ReviewEmail_di" bpmnElement="Task_ReviewEmail">
+        <dc:Bounds x="330" y="240" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_ManagerDecision_di" bpmnElement="Gateway_ManagerDecision" isMarkerVisible="true">
+        <dc:Bounds x="505" y="255" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_Rejected_ASIS_di" bpmnElement="EndEvent_Rejected_ASIS">
+        <dc:Bounds x="632" y="262" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_CreateTicket_di" bpmnElement="Task_CreateTicket">
+        <dc:Bounds x="500" y="380" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ManualAdminGrant_di" bpmnElement="Task_ManualAdminGrant">
+        <dc:Bounds x="670" y="380" width="130" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_NotifyUserManual_di" bpmnElement="Task_NotifyUserManual">
+        <dc:Bounds x="850" y="380" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_Success_ASIS_di" bpmnElement="EndEvent_Success_ASIS">
+        <dc:Bounds x="1032" y="122" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1">
+        <di:waypoint x="278" y="140" />
+        <di:waypoint x="330" y="140" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_2_di" bpmnElement="Flow_2">
+        <di:waypoint x="390" y="180" />
+        <di:waypoint x="390" y="240" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_3_di" bpmnElement="Flow_3">
+        <di:waypoint x="450" y="280" />
+        <di:waypoint x="505" y="280" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ManagerApprove_di" bpmnElement="Flow_ManagerApprove">
+        <di:waypoint x="530" y="305" />
+        <di:waypoint x="530" y="380" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ManagerReject_di" bpmnElement="Flow_ManagerReject">
+        <di:waypoint x="555" y="280" />
+        <di:waypoint x="632" y="280" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_4_di" bpmnElement="Flow_4">
+        <di:waypoint x="620" y="420" />
+        <di:waypoint x="670" y="420" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_5_di" bpmnElement="Flow_5">
+        <di:waypoint x="800" y="420" />
+        <di:waypoint x="850" y="420" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_6_di" bpmnElement="Flow_6">
+        <di:waypoint x="970" y="420" />
+        <di:waypoint x="1050" y="420" />
+        <di:waypoint x="1050" y="158" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

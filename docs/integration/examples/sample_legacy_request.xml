@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<AccessProvisionRequest xmlns="http://bank.corp/accessflow/legacy/v1">
+  <MessageId>MSG-2026-10-15-001</MessageId>
+  <Timestamp>2026-10-15T21:00:00Z</Timestamp>
+  <Payload>
+    <RequestId>1042</RequestId>
+    <RequestUUID>e3b0c442-98fc-1c14-9afbf4c8996fb924</RequestUUID>
+    <Operation>GRANT</Operation>
+    <SystemCode>CORE_BANKING_ABS</SystemCode>
+    <RoleCode>SENIOR_OPERATOR</RoleCode>
+    <IsPrivileged>false</IsPrivileged>
+    <Justification>Плановый перевод сотрудника в отдел расчетно-кассового обслуживания</Justification>
+    <Employee>
+      <EmployeeId>501</EmployeeId>
+      <Username>ivanov_ii</Username>
+      <FullName>Иванов Иван Иванович</FullName>
+      <Department>Департамент расчетных операций</Department>
+    </Employee>
+    <ValidTo>2027-10-15T23:59:59Z</ValidTo>
+  </Payload>
+</AccessProvisionRequest>

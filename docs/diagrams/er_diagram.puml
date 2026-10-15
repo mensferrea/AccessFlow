@@ -1,0 +1,87 @@
+@startuml er_diagram
+!theme plain
+skinparam defaultFontName Arial
+skinparam linetype ortho
+
+entity "users" as users {
+  * id : integer <<generated>>
+  --
+  * username : varchar(50) <<unique>>
+  * email : varchar(100) <<unique>>
+  * full_name : varchar(150)
+  * role : varchar(30)
+  * department : varchar(100)
+  * is_active : boolean
+  * created_at : timestamp with time zone
+}
+
+entity "systems" as systems {
+  * id : integer <<generated>>
+  --
+  * code : varchar(50) <<unique>>
+  * name : varchar(100)
+  * description : text
+  * owner_id : integer <<FK users.id>>
+  * is_active : boolean
+  * created_at : timestamp with time zone
+}
+
+entity "access_roles" as access_roles {
+  * id : integer <<generated>>
+  --
+  * system_id : integer <<FK systems.id>>
+  * code : varchar(50)
+  * name : varchar(100)
+  * description : text
+  * is_privileged : boolean
+  * is_active : boolean
+  * created_at : timestamp with time zone
+}
+
+entity "requests" as requests {
+  * id : integer <<generated>>
+  --
+  * request_uuid : uuid <<unique>>
+  * employee_id : integer <<FK users.id>>
+  * role_id : integer <<FK access_roles.id>>
+  * status : varchar(30)
+  * justification : text
+  * valid_to : timestamp with time zone
+  * error_message : text
+  * created_at : timestamp with time zone
+  * updated_at : timestamp with time zone
+}
+
+entity "approvals" as approvals {
+  * id : integer <<generated>>
+  --
+  * request_id : integer <<FK requests.id>>
+  * step : varchar(30)
+  * approver_id : integer <<FK users.id>>
+  * status : varchar(20)
+  * comment : text
+  * action_at : timestamp with time zone
+}
+
+entity "audit_logs" as audit_logs {
+  * id : integer <<generated>>
+  --
+  * request_id : integer <<FK requests.id>>
+  * actor_id : integer <<FK users.id>>
+  * action : varchar(50)
+  * old_status : varchar(30)
+  * new_status : varchar(30)
+  * details : jsonb
+  * created_at : timestamp with time zone
+}
+
+users ||--o{ systems : "owns"
+systems ||--|{ access_roles : "defines"
+users ||--o{ requests : "initiates"
+access_roles ||--o{ requests : "requested in"
+requests ||--o{ approvals : "has"
+users ||--o{ approvals : "decides"
+requests ||--o{ audit_logs : "tracked in"
+users ||--o{ audit_logs : "performed by"
+
+@enduml

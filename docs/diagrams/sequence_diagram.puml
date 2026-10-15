@@ -1,0 +1,95 @@
+@startuml sequence_diagram
+!theme plain
+autonumber
+skinparam defaultFontName Arial
+skinparam BoxPadding 10
+
+title AccessFlow — Сквозной интеграционный сценарий (UML Sequence)
+
+box "Пользователи" #LightYellow
+actor "Сотрудник" as Emp
+actor "Руководитель" as Mgr
+actor "Офицер ИБ" as Sec
+end box
+
+box "Система AccessFlow" #LightCyan
+participant "API Gateway /\nFastAPI App" as API
+participant "RequestService" as Service
+database "PostgreSQL" as DB
+end box
+
+box "Внешние корпоративные системы" #Lavender
+participant "HRIS API" as HRIS
+participant "IAM System" as IAM
+end box
+
+== 1. Подача заявки ==
+Emp -> API: POST /api/v1/requests (role_id, justification)
+activate API
+API -> Service: create_request(data, user_id)
+activate Service
+Service -> HRIS: GET /api/v1/employees/{emp_id}
+activate HRIS
+HRIS --> Service: 200 OK (status: "ACTIVE", manager_id: "mgr-101")
+deactivate HRIS
+
+Service -> DB: Check existing active requests/roles
+DB --> Service: OK (no conflict)
+
+Service -> DB: INSERT INTO requests (status='PENDING_MANAGER', is_privileged=true)
+Service -> DB: INSERT INTO audit_logs (action='CREATE_REQUEST')
+DB --> Service: request_id: 123
+Service --> API: RequestResponse(status='PENDING_MANAGER')
+API --> Emp: 201 Created (id: 123, status: "PENDING_MANAGER")
+deactivate Service
+deactivate API
+
+== 2. Согласование руководителем ==
+Mgr -> API: POST /api/v1/requests/123/approve (decision='APPROVED')
+activate API
+API -> Service: process_approval(123, mgr_id, 'APPROVED')
+activate Service
+Service -> DB: UPDATE requests SET status='PENDING_SECURITY'
+Service -> DB: INSERT INTO approvals (step='MANAGER', status='APPROVED')
+Service -> DB: INSERT INTO audit_logs (action='MANAGER_APPROVED')
+DB --> Service: OK
+Service --> API: 200 OK
+API --> Mgr: 200 OK (Status: PENDING_SECURITY)
+deactivate Service
+deactivate API
+
+== 3. Согласование ИБ (Привилегированный доступ) ==
+Sec -> API: POST /api/v1/requests/123/approve (decision='APPROVED')
+activate API
+API -> Service: process_approval(123, sec_id, 'APPROVED')
+activate Service
+Service -> DB: UPDATE requests SET status='APPROVED'
+Service -> DB: INSERT INTO approvals (step='SECURITY', status='APPROVED')
+Service -> DB: INSERT INTO audit_logs (action='SECURITY_APPROVED')
+DB --> Service: OK
+
+== 4. Автоматический провижининг в IAM ==
+Service -> DB: UPDATE requests SET status='IN_PROVISIONING'
+Service -> IAM: POST /api/v1/provisioning\nHeader: Idempotency-Key: {req_uuid}\nBody: {emp_id, system_code, role_code}
+activate IAM
+
+alt Успешное исполнение (HTTP 200/201)
+    IAM --> Service: 201 Created (provisioning_id: "iam-999")
+    Service -> DB: UPDATE requests SET status='PROVISIONED'
+    Service -> DB: INSERT INTO audit_logs (action='PROVISION_SUCCESS')
+else Ошибка сервиса / Retry
+    IAM --> Service: 503 Service Unavailable
+    Service -> Service: Retry with Exponential Backoff (3 attempts)
+    alt Все попытки исчерпаны
+        Service -> DB: UPDATE requests SET status='FAILED'
+        Service -> DB: INSERT INTO audit_logs (action='PROVISION_FAILED')
+    end
+end
+deactivate IAM
+
+Service --> API: Final Status
+API --> Sec: 200 OK (Status: PROVISIONED)
+deactivate Service
+deactivate API
+
+@enduml

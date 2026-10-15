@@ -1,0 +1,36 @@
+@startuml context_diagram
+!theme plain
+skinparam defaultFontName Arial
+skinparam roundCorner 10
+
+title AccessFlow — Контекстная диаграмма системы (C4 Context)
+
+actor "Сотрудник\n(Инициатор)" as Employee #LightBlue
+actor "Руководитель" as Manager #LightYellow
+actor "Владелец системы" as Owner #LightGreen
+actor "Офицер ИБ" as Security #LightCoral
+actor "Администратор" as Admin #LightGray
+
+package "Контур Банка" {
+  component [AccessFlow\n(Система управления доступом)] as AccessFlow #LightCyan
+  
+  database "PostgreSQL\n(AccessFlow DB)" as DB #WhiteSmoke
+  
+  component [HRIS\n(Кадровая система)] as HRIS #Lavender
+  component [IAM Engine\n(Управление учетными записями и правами)] as IAM #Lavender
+  component [Legacy ABS\n(АБС Банка - XML/XSD)] as LegacyABS #Wheat
+}
+
+Employee --> AccessFlow : 1. Подача заявки, каталог прав,\nотслеживание статусов (Web / REST)
+Manager --> AccessFlow : 2. Согласование заявок подчиненных (REST)
+Owner --> AccessFlow : 3. Согласование привилегированных ролей (REST)
+Security --> AccessFlow : 4. Экспертиза и утверждение ИБ (REST)
+Admin --> AccessFlow : 5. Конфигурация, аудит, мониторинг (REST)
+
+AccessFlow <--> DB : Чтение/запись заявок,\nсогласований, журнала аудита
+
+AccessFlow --> HRIS : Проверка активности сотрудника,\nдолжности, руководителя (REST JSON)
+AccessFlow --> IAM : Автоматический провижининг прав\n(REST JSON + Idempotency-Key)
+AccessFlow --> LegacyABS : Регистрация учетных записей\n(XML over HTTP по XSD-контракту)
+
+@enduml

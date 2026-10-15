@@ -1,0 +1,386 @@
+openapi: 3.1.0
+info:
+  title: AccessFlow API
+  description: Корпоративная система управления заявками на доступ к банковским информационным системам
+  version: 1.0.0
+servers:
+  - url: http://localhost:8000
+    description: Local Development Server
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    UserResponse:
+      type: object
+      required: [id, username, email, full_name, role, department, is_active]
+      properties:
+        id:
+          type: integer
+          example: 1
+        username:
+          type: string
+          example: ivanov_ii
+        email:
+          type: string
+          example: ivanov@bank.corp
+        full_name:
+          type: string
+          example: Иванов Иван Иванович
+        role:
+          type: string
+          example: EMPLOYEE
+        department:
+          type: string
+          example: Департамент расчетных операций
+        is_active:
+          type: boolean
+          example: true
+
+    SystemResponse:
+      type: object
+      required: [id, code, name, description, owner_id, is_active]
+      properties:
+        id:
+          type: integer
+          example: 1
+        code:
+          type: string
+          example: CORE_BANKING
+        name:
+          type: string
+          example: Автоматизированная банковская система (АБС)
+        description:
+          type: string
+          example: Главная учетная система банка
+        owner_id:
+          type: integer
+          example: 3
+        is_active:
+          type: boolean
+          example: true
+
+    RoleResponse:
+      type: object
+      required: [id, system_id, code, name, description, is_privileged, is_active]
+      properties:
+        id:
+          type: integer
+          example: 1
+        system_id:
+          type: integer
+          example: 1
+        code:
+          type: string
+          example: ABS_OPERATOR
+        name:
+          type: string
+          example: Оператор РКО
+        description:
+          type: string
+          example: Оформление проводок и выписок
+        is_privileged:
+          type: boolean
+          example: false
+        is_active:
+          type: boolean
+          example: true
+
+    RequestCreate:
+      type: object
+      required: [role_id, justification]
+      properties:
+        role_id:
+          type: integer
+          example: 1
+        justification:
+          type: string
+          minLength: 10
+          example: Перевод сотрудника на должность старшего оператора кассового узла
+        valid_to:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2027-10-15T23:59:59Z"
+
+    ApprovalDecision:
+      type: object
+      required: [decision]
+      properties:
+        decision:
+          type: string
+          enum: [APPROVED, REJECTED]
+          example: APPROVED
+        comment:
+          type: string
+          nullable: true
+          example: Одобрено в рамках должностной инструкции
+
+    RequestDetailResponse:
+      type: object
+      required: [id, request_uuid, employee_id, role_id, status, justification, created_at]
+      properties:
+        id:
+          type: integer
+          example: 101
+        request_uuid:
+          type: string
+          format: uuid
+          example: "4b84b5c7-1234-4567-89ab-cdef01234567"
+        employee_id:
+          type: integer
+          example: 1
+        role_id:
+          type: integer
+          example: 2
+        status:
+          type: string
+          enum: [DRAFT, PENDING_MANAGER, PENDING_OWNER, PENDING_SECURITY, APPROVED, IN_PROVISIONING, PROVISIONED, REJECTED, CANCELLED, FAILED]
+          example: PENDING_MANAGER
+        justification:
+          type: string
+          example: Перевод сотрудника в отдел кредитного анализа
+        valid_to:
+          type: string
+          format: date-time
+          nullable: true
+        error_message:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      required: [detail]
+      properties:
+        detail:
+          type: string
+          example: Сотрудник заблокирован или уволен в кадровой системе (HRIS)
+
+paths:
+  /api/v1/systems:
+    get:
+      summary: Получение каталога информационных систем
+      operationId: getSystems
+      responses:
+        '200':
+          description: Каталог систем
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SystemResponse'
+
+  /api/v1/roles:
+    get:
+      summary: Получение каталога доступных ролей
+      operationId: getRoles
+      parameters:
+        - name: system_id
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Каталог ролей
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RoleResponse'
+
+  /api/v1/requests:
+    get:
+      summary: Список заявок пользователя / на согласовании
+      operationId: getRequests
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Список заявок
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RequestDetailResponse'
+    post:
+      summary: Создание новой заявки на доступ
+      operationId: createRequest
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestCreate'
+      responses:
+        '201':
+          description: Заявка успешно создана
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RequestDetailResponse'
+        '400':
+          description: Некорректные параметры заявки
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Сотрудник уволен / не активен в HRIS
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Конфликт доступа (роль уже активна или на согласовании)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/requests/{request_id}:
+    get:
+      summary: Детальная информация по заявке
+      operationId: getRequestById
+      parameters:
+        - name: request_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Детали заявки
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RequestDetailResponse'
+        '404':
+          description: Заявка не найдена
+
+  /api/v1/requests/{request_id}/approve:
+    post:
+      summary: Принятие решения по заявке (согласование / отклонение)
+      operationId: processApproval
+      parameters:
+        - name: request_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApprovalDecision'
+      responses:
+        '200':
+          description: Решение успешно зафиксировано
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RequestDetailResponse'
+        '400':
+          description: Недопустимый статус или отсутствие причины отказа
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/requests/{request_id}/cancel:
+    post:
+      summary: Отзыв заявки сотрудником
+      operationId: cancelRequest
+      parameters:
+        - name: request_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Заявка успешно отозвана
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RequestDetailResponse'
+        '400':
+          description: Отмена невозможна на текущем статусе
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/requests/{request_id}/retry:
+    post:
+      summary: Повторный запуск провижининга администратором
+      operationId: retryProvisioning
+      parameters:
+        - name: request_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Провижининг перезапущен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RequestDetailResponse'
+
+  /api/v1/hris/employees/{employee_id}:
+    get:
+      summary: Внутренний эндпоинт проверки кадровых данных
+      operationId: getHrisEmployee
+      parameters:
+        - name: employee_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Информация о сотруднике из HRIS
+
+  /api/v1/iam/provision:
+    post:
+      summary: Внутренний эндпоинт провижининга прав IAM
+      operationId: provisionAccess
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Доступ успешно предоставлен

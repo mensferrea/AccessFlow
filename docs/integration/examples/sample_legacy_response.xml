@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<AccessProvisionResponse xmlns="http://bank.corp/accessflow/legacy/v1">
+  <MessageId>RESP-2026-10-15-001</MessageId>
+  <OriginalMessageId>MSG-2026-10-15-001</OriginalMessageId>
+  <Timestamp>2026-10-15T21:00:02Z</Timestamp>
+  <Status>SUCCESS</Status>
+  <ProvisioningId>LEGACY-PROV-88219</ProvisioningId>
+</AccessProvisionResponse>

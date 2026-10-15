@@ -1,0 +1,160 @@
+{
+  "info": {
+    "_postman_id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+    "name": "AccessFlow API Suite",
+    "description": "Коллекция Postman для тестирования API системы AccessFlow",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Справочники",
+      "item": [
+        {
+          "name": "Получить список систем",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/systems",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "systems"]
+            }
+          }
+        },
+        {
+          "name": "Получить каталог ролей",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/roles?system_id=1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "roles"],
+              "query": [{"key": "system_id", "value": "1"}]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Заявки на доступ",
+      "item": [
+        {
+          "name": "Подать заявку на доступ (Сотрудник)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "X-User-Id", "value": "1"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role_id\": 1,\n  \"justification\": \"Перевод в отдел РКО кассового узла\",\n  \"valid_to\": \"2027-10-15T23:59:59Z\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/requests",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "requests"]
+            }
+          }
+        },
+        {
+          "name": "Получить список заявок",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/requests",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "requests"]
+            }
+          }
+        },
+        {
+          "name": "Получить заявку по ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/requests/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "requests", "1"]
+            }
+          }
+        },
+        {
+          "name": "Согласовать заявку (Руководитель)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "X-User-Id", "value": "2"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"decision\": \"APPROVED\",\n  \"comment\": \"Согласовано руководителем отделения\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/requests/1/approve",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "requests", "1", "approve"]
+            }
+          }
+        },
+        {
+          "name": "Отклонить заявку",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "X-User-Id", "value": "2"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"decision\": \"REJECTED\",\n  \"comment\": \"Несоответствие квалификационным требованиям\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/requests/1/approve",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "requests", "1", "approve"]
+            }
+          }
+        },
+        {
+          "name": "Отозвать заявку (Сотрудник)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "X-User-Id", "value": "1"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/requests/1/cancel",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "requests", "1", "cancel"]
+            }
+          }
+        },
+        {
+          "name": "Повторить провижининг (Администратор)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "X-User-Id", "value": "4"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/requests/1/retry",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "requests", "1", "retry"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000"
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+@startuml state_diagram
+!theme plain
+skinparam defaultFontName Arial
+skinparam state {
+  BackgroundColor LightCyan
+  BorderColor DarkSlateGray
+}
+
+title AccessFlow — Диаграмма состояний заявки (UML State Machine)
+
+[*] --> DRAFT : Сохранение черновика
+[*] --> PENDING_MANAGER : Мгновенная отправка (HRIS status = ACTIVE)
+
+DRAFT --> PENDING_MANAGER : Отправка на согласование
+DRAFT --> CANCELLED : Удаление черновика
+
+state PENDING_MANAGER : Ожидает решения руководителя
+PENDING_MANAGER --> CANCELLED : Отзыв сотрудником
+PENDING_MANAGER --> REJECTED : Отклонено руководителем\n(comment required)
+PENDING_MANAGER --> PENDING_OWNER : Одобрено (is_privileged = true)
+PENDING_MANAGER --> APPROVED : Одобрено (is_privileged = false)
+
+state PENDING_OWNER : Ожидает владельца ИС
+PENDING_OWNER --> CANCELLED : Отзыв сотрудником
+PENDING_OWNER --> REJECTED : Отклонено владельцем ИС
+PENDING_OWNER --> PENDING_SECURITY : Одобрено владельцем ИС
+
+state PENDING_SECURITY : Ожидает офицера ИБ
+PENDING_SECURITY --> CANCELLED : Отзыв сотрудником
+PENDING_SECURITY --> REJECTED : Отклонено ИБ
+PENDING_SECURITY --> APPROVED : Одобрено ИБ
+
+state APPROVED : Все согласования получены
+APPROVED --> IN_PROVISIONING : Авто-триггер провижининга
+
+state IN_PROVISIONING : Запрос передан в IAM
+IN_PROVISIONING --> PROVISIONED : IAM 200/201 OK
+IN_PROVISIONING --> FAILED : 3 неуспешных попытки / 4xx
+
+FAILED --> IN_PROVISIONING : Ручной повтор (Admin retry)
+
+state PROVISIONED #LightGreen : Права выданы (Финальный успех)
+state REJECTED #LightPink : Отказ (Финальный статус)
+state CANCELLED #LightGray : Отозвана (Финальный статус)
+
+PROVISIONED --> [*]
+REJECTED --> [*]
+CANCELLED --> [*]
+
+@enduml

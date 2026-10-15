@@ -1,0 +1,246 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+                  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+                  id="Definitions_TO_BE"
+                  targetNamespace="http://bpmn.io/schema/bpmn"
+                  exporter="Camunda Modeler"
+                  exporterVersion="5.20.0">
+  <bpmn:collaboration id="Collaboration_TOBE">
+    <bpmn:participant id="Participant_AccessFlow" name="Процесс предоставления доступа TO-BE (AccessFlow)" processRef="Process_TOBE" />
+  </bpmn:collaboration>
+
+  <bpmn:process id="Process_TOBE" isExecutable="true">
+    <bpmn:laneSet id="LaneSet_TOBE">
+      <bpmn:lane id="Lane_Employee" name="Сотрудник (Инициатор)">
+        <bpmn:flowNodeRef>Start_Request</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_SubmitRequest</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Rejected</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Success</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Failed</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Manager" name="Руководитель сотрудника">
+        <bpmn:flowNodeRef>Task_ManagerApproval</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_ManagerDecision</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Owner_Sec" name="Владелец ИС и Служба ИБ">
+        <bpmn:flowNodeRef>Task_OwnerApproval</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_OwnerDecision</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_SecApproval</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_SecDecision</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_System" name="AccessFlow Engine / Интеграции">
+        <bpmn:flowNodeRef>Task_HRIS_Check</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_HRIS_Valid</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_CheckPrivileged</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_IAM_Provision</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_IAM_Result</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_NotifySuccess</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_NotifyRejected</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_HandleFailure</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="Start_Request" name="Подача заявки сотрудником">
+      <bpmn:outgoing>F1</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <bpmn:userTask id="Task_SubmitRequest" name="Заполнение формы (система, роль, обоснование)">
+      <bpmn:incoming>F1</bpmn:incoming>
+      <bpmn:outgoing>F2</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:serviceTask id="Task_HRIS_Check" name="Валидация сотрудника через HRIS API">
+      <bpmn:incoming>F2</bpmn:incoming>
+      <bpmn:outgoing>F3</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <bpmn:exclusiveGateway id="Gateway_HRIS_Valid" name="Сотрудник активен?">
+      <bpmn:incoming>F3</bpmn:incoming>
+      <bpmn:outgoing>F_HRIS_Yes</bpmn:outgoing>
+      <bpmn:outgoing>F_HRIS_No</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <bpmn:userTask id="Task_ManagerApproval" name="Согласование заявки руководителем">
+      <bpmn:incoming>F_HRIS_Yes</bpmn:incoming>
+      <bpmn:outgoing>F4</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:exclusiveGateway id="Gateway_ManagerDecision" name="Решение руководителя">
+      <bpmn:incoming>F4</bpmn:incoming>
+      <bpmn:outgoing>F_Mgr_Approve</bpmn:outgoing>
+      <bpmn:outgoing>F_Mgr_Reject</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <bpmn:exclusiveGateway id="Gateway_CheckPrivileged" name="Привилегированный доступ?">
+      <bpmn:incoming>F_Mgr_Approve</bpmn:incoming>
+      <bpmn:outgoing>F_IsPrivileged</bpmn:outgoing>
+      <bpmn:outgoing>F_IsStandard</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <bpmn:userTask id="Task_OwnerApproval" name="Согласование владельцем ИС">
+      <bpmn:incoming>F_IsPrivileged</bpmn:incoming>
+      <bpmn:outgoing>F5</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:exclusiveGateway id="Gateway_OwnerDecision" name="Решение владельца">
+      <bpmn:incoming>F5</bpmn:incoming>
+      <bpmn:outgoing>F_Owner_Approve</bpmn:outgoing>
+      <bpmn:outgoing>F_Owner_Reject</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <bpmn:userTask id="Task_SecApproval" name="Согласование Службой ИБ">
+      <bpmn:incoming>F_Owner_Approve</bpmn:incoming>
+      <bpmn:outgoing>F6</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:exclusiveGateway id="Gateway_SecDecision" name="Решение ИБ">
+      <bpmn:incoming>F6</bpmn:incoming>
+      <bpmn:outgoing>F_Sec_Approve</bpmn:outgoing>
+      <bpmn:outgoing>F_Sec_Reject</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <bpmn:serviceTask id="Task_IAM_Provision" name="Вызов API провижининга в IAM">
+      <bpmn:incoming>F_IsStandard</bpmn:incoming>
+      <bpmn:incoming>F_Sec_Approve</bpmn:incoming>
+      <bpmn:outgoing>F7</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <bpmn:exclusiveGateway id="Gateway_IAM_Result" name="Результат провижининга">
+      <bpmn:incoming>F7</bpmn:incoming>
+      <bpmn:outgoing>F_IAM_Success</bpmn:outgoing>
+      <bpmn:outgoing>F_IAM_Error</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <bpmn:sendTask id="Task_NotifySuccess" name="Уведомление об успешном предоставлении доступа">
+      <bpmn:incoming>F_IAM_Success</bpmn:incoming>
+      <bpmn:outgoing>F8</bpmn:outgoing>
+    </bpmn:sendTask>
+
+    <bpmn:endEvent id="End_Success" name="Доступ предоставлен">
+      <bpmn:incoming>F8</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:sendTask id="Task_NotifyRejected" name="Регистрация отказа и уведомление сотрудника">
+      <bpmn:incoming>F_HRIS_No</bpmn:incoming>
+      <bpmn:incoming>F_Mgr_Reject</bpmn:incoming>
+      <bpmn:incoming>F_Owner_Reject</bpmn:incoming>
+      <bpmn:incoming>F_Sec_Reject</bpmn:incoming>
+      <bpmn:outgoing>F9</bpmn:outgoing>
+    </bpmn:sendTask>
+
+    <bpmn:endEvent id="End_Rejected" name="Заявка отклонена">
+      <bpmn:incoming>F9</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:serviceTask id="Task_HandleFailure" name="Регистрация инцидента и повторные попытки (Retry)">
+      <bpmn:incoming>F_IAM_Error</bpmn:incoming>
+      <bpmn:outgoing>F10</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <bpmn:endEvent id="End_Failed" name="Ошибка исполнения провижининга">
+      <bpmn:incoming>F10</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="F1" sourceRef="Start_Request" targetRef="Task_SubmitRequest" />
+    <bpmn:sequenceFlow id="F2" sourceRef="Task_SubmitRequest" targetRef="Task_HRIS_Check" />
+    <bpmn:sequenceFlow id="F3" sourceRef="Task_HRIS_Check" targetRef="Gateway_HRIS_Valid" />
+    <bpmn:sequenceFlow id="F_HRIS_Yes" name="Да" sourceRef="Gateway_HRIS_Valid" targetRef="Task_ManagerApproval" />
+    <bpmn:sequenceFlow id="F_HRIS_No" name="Нет (уволен)" sourceRef="Gateway_HRIS_Valid" targetRef="Task_NotifyRejected" />
+    <bpmn:sequenceFlow id="F4" sourceRef="Task_ManagerApproval" targetRef="Gateway_ManagerDecision" />
+    <bpmn:sequenceFlow id="F_Mgr_Approve" name="Одобрено" sourceRef="Gateway_ManagerDecision" targetRef="Gateway_CheckPrivileged" />
+    <bpmn:sequenceFlow id="F_Mgr_Reject" name="Отклонено" sourceRef="Gateway_ManagerDecision" targetRef="Task_NotifyRejected" />
+    <bpmn:sequenceFlow id="F_IsStandard" name="Стандартный доступ" sourceRef="Gateway_CheckPrivileged" targetRef="Task_IAM_Provision" />
+    <bpmn:sequenceFlow id="F_IsPrivileged" name="Привилегированный доступ" sourceRef="Gateway_CheckPrivileged" targetRef="Task_OwnerApproval" />
+    <bpmn:sequenceFlow id="F5" sourceRef="Task_OwnerApproval" targetRef="Gateway_OwnerDecision" />
+    <bpmn:sequenceFlow id="F_Owner_Approve" name="Одобрено" sourceRef="Gateway_OwnerDecision" targetRef="Task_SecApproval" />
+    <bpmn:sequenceFlow id="F_Owner_Reject" name="Отклонено" sourceRef="Gateway_OwnerDecision" targetRef="Task_NotifyRejected" />
+    <bpmn:sequenceFlow id="F6" sourceRef="Task_SecApproval" targetRef="Gateway_SecDecision" />
+    <bpmn:sequenceFlow id="F_Sec_Approve" name="Одобрено" sourceRef="Gateway_SecDecision" targetRef="Task_IAM_Provision" />
+    <bpmn:sequenceFlow id="F_Sec_Reject" name="Отклонено" sourceRef="Gateway_SecDecision" targetRef="Task_NotifyRejected" />
+    <bpmn:sequenceFlow id="F7" sourceRef="Task_IAM_Provision" targetRef="Gateway_IAM_Result" />
+    <bpmn:sequenceFlow id="F_IAM_Success" name="Успешно" sourceRef="Gateway_IAM_Result" targetRef="Task_NotifySuccess" />
+    <bpmn:sequenceFlow id="F_IAM_Error" name="Ошибка" sourceRef="Gateway_IAM_Result" targetRef="Task_HandleFailure" />
+    <bpmn:sequenceFlow id="F8" sourceRef="Task_NotifySuccess" targetRef="End_Success" />
+    <bpmn:sequenceFlow id="F9" sourceRef="Task_NotifyRejected" targetRef="End_Rejected" />
+    <bpmn:sequenceFlow id="F10" sourceRef="Task_HandleFailure" targetRef="End_Failed" />
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="BPMNDiagram_TOBE">
+    <bpmndi:BPMNPlane id="BPMNPlane_TOBE" bpmnElement="Collaboration_TOBE">
+      <bpmndi:BPMNShape id="Participant_AccessFlow_di" bpmnElement="Participant_AccessFlow" isHorizontal="true">
+        <dc:Bounds x="160" y="80" width="1350" height="580" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_Employee_di" bpmnElement="Lane_Employee" isHorizontal="true">
+        <dc:Bounds x="190" y="80" width="1320" height="130" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_Manager_di" bpmnElement="Lane_Manager" isHorizontal="true">
+        <dc:Bounds x="190" y="210" width="1320" height="130" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_Owner_Sec_di" bpmnElement="Lane_Owner_Sec" isHorizontal="true">
+        <dc:Bounds x="190" y="340" width="1320" height="140" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_System_di" bpmnElement="Lane_System" isHorizontal="true">
+        <dc:Bounds x="190" y="480" width="1320" height="180" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Start_Request_di" bpmnElement="Start_Request">
+        <dc:Bounds x="242" y="122" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_SubmitRequest_di" bpmnElement="Task_SubmitRequest">
+        <dc:Bounds x="320" y="100" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_HRIS_Check_di" bpmnElement="Task_HRIS_Check">
+        <dc:Bounds x="320" y="520" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_HRIS_Valid_di" bpmnElement="Gateway_HRIS_Valid" isMarkerVisible="true">
+        <dc:Bounds x="485" y="535" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ManagerApproval_di" bpmnElement="Task_ManagerApproval">
+        <dc:Bounds x="450" y="235" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_ManagerDecision_di" bpmnElement="Gateway_ManagerDecision" isMarkerVisible="true">
+        <dc:Bounds x="615" y="250" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_CheckPrivileged_di" bpmnElement="Gateway_CheckPrivileged" isMarkerVisible="true">
+        <dc:Bounds x="725" y="535" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_OwnerApproval_di" bpmnElement="Task_OwnerApproval">
+        <dc:Bounds x="690" y="370" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_OwnerDecision_di" bpmnElement="Gateway_OwnerDecision" isMarkerVisible="true">
+        <dc:Bounds x="855" y="385" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_SecApproval_di" bpmnElement="Task_SecApproval">
+        <dc:Bounds x="950" y="370" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_SecDecision_di" bpmnElement="Gateway_SecDecision" isMarkerVisible="true">
+        <dc:Bounds x="1115" y="385" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_IAM_Provision_di" bpmnElement="Task_IAM_Provision">
+        <dc:Bounds x="1080" y="520" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_IAM_Result_di" bpmnElement="Gateway_IAM_Result" isMarkerVisible="true">
+        <dc:Bounds x="1245" y="535" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_NotifySuccess_di" bpmnElement="Task_NotifySuccess">
+        <dc:Bounds x="1210" y="100" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_Success_di" bpmnElement="End_Success">
+        <dc:Bounds x="1382" y="122" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_NotifyRejected_di" bpmnElement="Task_NotifyRejected">
+        <dc:Bounds x="690" y="100" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_Rejected_di" bpmnElement="End_Rejected">
+        <dc:Bounds x="862" y="122" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_HandleFailure_di" bpmnElement="Task_HandleFailure">
+        <dc:Bounds x="1340" y="520" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_Failed_di" bpmnElement="End_Failed">
+        <dc:Bounds x="1382" y="162" width="36" height="36" />
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

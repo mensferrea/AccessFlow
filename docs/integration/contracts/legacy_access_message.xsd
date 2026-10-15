@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="http://bank.corp/accessflow/legacy/v1"
+           xmlns:tns="http://bank.corp/accessflow/legacy/v1"
+           elementFormDefault="qualified">
+
+  <xs:simpleType name="OperationType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="GRANT"/>
+      <xs:enumeration value="REVOKE"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="StatusCode">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="SUCCESS"/>
+      <xs:enumeration value="FAILED"/>
+      <xs:enumeration value="REJECTED"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:complexType name="EmployeeInfo">
+    <xs:sequence>
+      <xs:element name="EmployeeId" type="xs:int"/>
+      <xs:element name="Username" type="xs:string"/>
+      <xs:element name="FullName" type="xs:string"/>
+      <xs:element name="Department" type="xs:string"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="AccessRequest">
+    <xs:sequence>
+      <xs:element name="RequestId" type="xs:int"/>
+      <xs:element name="RequestUUID" type="xs:string"/>
+      <xs:element name="Operation" type="tns:OperationType"/>
+      <xs:element name="SystemCode" type="xs:string"/>
+      <xs:element name="RoleCode" type="xs:string"/>
+      <xs:element name="IsPrivileged" type="xs:boolean"/>
+      <xs:element name="Justification" type="xs:string"/>
+      <xs:element name="Employee" type="tns:EmployeeInfo"/>
+      <xs:element name="ValidTo" type="xs:dateTime" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:element name="AccessProvisionRequest">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="MessageId" type="xs:string"/>
+        <xs:element name="Timestamp" type="xs:dateTime"/>
+        <xs:element name="Payload" type="tns:AccessRequest"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="AccessProvisionResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="MessageId" type="xs:string"/>
+        <xs:element name="OriginalMessageId" type="xs:string"/>
+        <xs:element name="Timestamp" type="xs:dateTime"/>
+        <xs:element name="Status" type="tns:StatusCode"/>
+        <xs:element name="ProvisioningId" type="xs:string" minOccurs="0"/>
+        <xs:element name="ErrorMessage" type="xs:string" minOccurs="0"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>
